@@ -46,51 +46,65 @@ export default async function handler(req, res) {
     }
 
     const data = await upstream.json();
-    const obs = data?.obs?.[0];
+    const fieldNames = data?.ob_fields;
+    const rawObs = data?.obs?.[0];
 
-    if (!obs || typeof obs.timestamp !== "number") {
+    if (!fieldNames || !rawObs) {
       return res.status(502).json({
         error: "No observation data returned for this station.",
         detail: JSON.stringify(data).slice(0, 500),
       });
     }
 
-    const pressureMb = obs.barometric_pressure ?? obs.sea_level_pressure ?? obs.station_pressure;
+    const idx = {};
+    fieldNames.forEach((name, i) => {
+      idx[name] = i;
+    });
+    const get = (name) => (name in idx ? rawObs[idx[name]] : null);
+
+    const timestamp = get("timestamp");
+    if (typeof timestamp !== "number") {
+      return res.status(502).json({
+        error: "No observation timestamp returned for this station.",
+        detail: JSON.stringify(data).slice(0, 500),
+      });
+    }
+
+    const pressureMb = get("station_pressure") ?? get("sea_level_pressure");
+    const airTempC = get("air_temp");
+    const precipMm = get("precip_accumulation");
+    const precipTodayMm = get("local_day_precip_accumulation");
 
     const payload = {
       stationName: data.station_name || null,
       publicName: data.public_name || null,
-      obsTimeEpoch: obs.timestamp,
+      obsTimeEpoch: timestamp,
       temperature: {
-        f: round1(cToF(obs.air_temperature)),
-        c: round1(obs.air_temperature),
+        f: round1(cToF(airTempC)),
+        c: round1(airTempC),
       },
-      humidity: round1(obs.relative_humidity),
+      humidity: round1(get("rh")),
       wind: {
-        avgMph: round1(msToMph(obs.wind_avg)),
-        gustMph: round1(msToMph(obs.wind_gust)),
-        lullMph: round1(msToMph(obs.wind_lull)),
-        directionDeg: obs.wind_direction,
-        directionCompass: degToCompass(obs.wind_direction || 0),
+        avgMph: round1(msToMph(get("wind_avg"))),
+        gustMph: round1(msToMph(get("wind_gust"))),
+        lullMph: round1(msToMph(get("wind_lull"))),
+        directionDeg: get("wind_dir"),
+        directionCompass: degToCompass(get("wind_dir") || 0),
       },
       pressure:
         pressureMb != null
           ? { inHg: round2(mbToInHg(pressureMb)), mb: round1(pressureMb) }
           : null,
       rain: {
-        recentIn: obs.precip != null ? round3(mmToIn(obs.precip)) : null,
-        todayIn:
-          obs.precip_accum_local_day != null
-            ? round2(mmToIn(obs.precip_accum_local_day))
-            : null,
+        recentIn: precipMm != null ? round3(mmToIn(precipMm)) : null,
+        todayIn: precipTodayMm != null ? round2(mmToIn(precipTodayMm)) : null,
       },
-      uvIndex: obs.uv != null ? round1(obs.uv) : null,
-      solarRadiationWm2: obs.solar_radiation ?? null,
-      illuminanceLux: obs.brightness ?? null,
+      uvIndex: get("uv") != null ? round1(get("uv")) : null,
+      solarRadiationWm2: get("solar_radiation"),
+      illuminanceLux: get("illuminance"),
       lightning: {
-        countLast1hr: obs.lightning_strike_count_last_1hr ?? null,
-        countLast3hr: obs.lightning_strike_count_last_3hr ?? null,
-        lastDistanceKm: obs.lightning_strike_last_distance ?? null,
+        countRecent: get("strike_count") ?? null,
+        lastDistanceKm: get("strike_distance") ?? null,
       },
       fetchedAtIso: new Date().toISOString(),
     };

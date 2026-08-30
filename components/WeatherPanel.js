@@ -92,10 +92,10 @@ export default function WeatherPanel() {
           </div>
         )}
         <div className="stat">
-          <div className="label">Lightning (last hr)</div>
-          <div className={"value" + ((data.lightning.countLast1hr || 0) > 0 ? " alert" : "")}>
-            {data.lightning.countLast1hr
-              ? `${data.lightning.countLast1hr} strikes${data.lightning.lastDistanceKm ? ` @ ~${data.lightning.lastDistanceKm} km` : ""}`
+          <div className="label">Lightning (recent)</div>
+          <div className={"value" + ((data.lightning.countRecent || 0) > 0 ? " alert" : "")}>
+            {data.lightning.countRecent
+              ? `${data.lightning.countRecent} strikes${data.lightning.lastDistanceKm ? ` @ ~${data.lightning.lastDistanceKm} km` : ""}`
               : "None"}
           </div>
         </div>
