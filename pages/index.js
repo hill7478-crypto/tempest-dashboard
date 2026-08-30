@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import Head from "next/head";
 import WeatherPanel from "../components/WeatherPanel";
+import StatsPanel from "../components/StatsPanel";
 
 // Leaflet touches `window`, so this must never render on the server.
 const RadarMap = dynamic(() => import("../components/RadarMap"), {
@@ -33,12 +34,21 @@ export default function Home() {
           <RadarMap lat={LAT} lon={LON} label={LABEL} />
         </section>
 
-        <section className="panel">
-          <div className="panel-header">
-            <span>Current Conditions</span>
-          </div>
-          <WeatherPanel />
-        </section>
+        <div className="right-col">
+          <section className="panel">
+            <div className="panel-header">
+              <span>Current Conditions</span>
+            </div>
+            <WeatherPanel />
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <span>High / Low / Rain</span>
+            </div>
+            <StatsPanel />
+          </section>
+        </div>
       </div>
     </div>
   );

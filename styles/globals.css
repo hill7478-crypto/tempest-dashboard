@@ -61,6 +61,12 @@ body {
   flex-direction: column;
 }
 
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .panel-header {
   padding: 10px 14px;
   border-bottom: 1px solid #1e2a3a;
@@ -160,6 +166,38 @@ body {
   font-size: 11px;
   color: #5c6b80;
   padding: 4px 2px;
+}
+
+.stats-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #0f1826;
+  border: 1px solid #1e2a3a;
+  border-radius: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.stats-header {
+  background: transparent;
+  border: none;
+  color: #8b98a9;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0 12px;
+}
+
+.stats-label {
+  font-weight: 600;
 }
 
 .error-box {
