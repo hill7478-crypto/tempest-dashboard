@@ -1,0 +1,177 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #0b1220;
+  color: #e6edf3;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #1e2a3a;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.header h1 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.header .sub {
+  font-size: 13px;
+  color: #8b98a9;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: #121b2b;
+  border: 1px solid #1e2a3a;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e2a3a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #8b98a9;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.map-container {
+  flex: 1;
+  min-height: 420px;
+}
+
+.radar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radar-controls button {
+  background: #1e2a3a;
+  border: none;
+  color: #e6edf3;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.radar-controls button:hover {
+  background: #29394f;
+}
+
+.weather-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.temp-hero {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.temp-hero .value {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.temp-hero .unit {
+  font-size: 22px;
+  color: #8b98a9;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat {
+  background: #0f1826;
+  border: 1px solid #1e2a3a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.stat .label {
+  font-size: 11px;
+  color: #8b98a9;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.stat .value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.stat .value.warn {
+  color: #f2a541;
+}
+
+.stat .value.alert {
+  color: #f25c54;
+}
+
+.footer-note {
+  font-size: 11px;
+  color: #5c6b80;
+  padding: 4px 2px;
+}
+
+.error-box {
+  margin: 16px;
+  padding: 12px 14px;
+  background: #2a1520;
+  border: 1px solid #6b2338;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #f2a5b5;
+}
+
+.leaflet-attribution-fix {
+  font-size: 10px;
+}
