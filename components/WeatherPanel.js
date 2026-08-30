@@ -65,36 +65,38 @@ export default function WeatherPanel() {
           <div className="label">Gust</div>
           <div className="value">{Math.round(data.wind.gustMph)} mph</div>
         </div>
-        <div className="stat">
-          <div className="label">Pressure</div>
-          <div className="value">{data.pressure.inHg.toFixed(2)} inHg</div>
-        </div>
-        <div className="stat">
-          <div className="label">Rain (last min)</div>
-          <div className="value">{data.rain.lastMinuteIn.toFixed(3)} in</div>
-        </div>
-        <div className="stat">
-          <div className="label">UV Index</div>
-          <div className={"value" + (data.uvIndex >= 8 ? " warn" : "")}>
-            {data.uvIndex}
+        {data.pressure && (
+          <div className="stat">
+            <div className="label">Pressure</div>
+            <div className="value">{data.pressure.inHg.toFixed(2)} inHg</div>
           </div>
-        </div>
+        )}
+        {data.rain.todayIn != null && (
+          <div className="stat">
+            <div className="label">Rain Today</div>
+            <div className="value">{data.rain.todayIn.toFixed(2)} in</div>
+          </div>
+        )}
+        {data.uvIndex != null && (
+          <div className="stat">
+            <div className="label">UV Index</div>
+            <div className={"value" + (data.uvIndex >= 8 ? " warn" : "")}>
+              {data.uvIndex}
+            </div>
+          </div>
+        )}
+        {data.solarRadiationWm2 != null && (
+          <div className="stat">
+            <div className="label">Solar Radiation</div>
+            <div className="value">{data.solarRadiationWm2} W/m&sup2;</div>
+          </div>
+        )}
         <div className="stat">
-          <div className="label">Solar Radiation</div>
-          <div className="value">{data.solarRadiationWm2} W/m&sup2;</div>
-        </div>
-        <div className="stat">
-          <div className="label">Lightning (recent)</div>
-          <div className={"value" + (data.lightning.strikeCount > 0 ? " alert" : "")}>
-            {data.lightning.strikeCount > 0
-              ? `${data.lightning.strikeCount} @ ~${data.lightning.avgDistanceKm} km`
+          <div className="label">Lightning (last hr)</div>
+          <div className={"value" + ((data.lightning.countLast1hr || 0) > 0 ? " alert" : "")}>
+            {data.lightning.countLast1hr
+              ? `${data.lightning.countLast1hr} strikes${data.lightning.lastDistanceKm ? ` @ ~${data.lightning.lastDistanceKm} km` : ""}`
               : "None"}
-          </div>
-        </div>
-        <div className="stat">
-          <div className="label">Station Battery</div>
-          <div className={"value" + (data.battery.low ? " warn" : "")}>
-            {data.battery.volts} V
           </div>
         </div>
         <div className="stat">
