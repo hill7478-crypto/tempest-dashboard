@@ -200,6 +200,24 @@ body {
   font-weight: 600;
 }
 
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stats-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b98a9;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stats-row-2col {
+  grid-template-columns: 1.4fr 1fr;
+}
+
 .error-box {
   margin: 16px;
   padding: 12px 14px;

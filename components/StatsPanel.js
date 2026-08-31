@@ -49,21 +49,56 @@ export default function StatsPanel() {
 
   return (
     <div className="weather-body">
-      <div className="stats-table">
-        <div className="stats-row stats-header">
-          <div></div>
-          <div>High</div>
-          <div>Low</div>
-          <div>Rain</div>
-        </div>
-        {rows.map(({ label, stat }) => (
-          <div className="stats-row" key={label}>
-            <div className="stats-label">{label}</div>
-            <div>{stat?.highF != null ? `${Math.round(stat.highF)}°F` : "—"}</div>
-            <div>{stat?.lowF != null ? `${Math.round(stat.lowF)}°F` : "—"}</div>
-            <div>{stat?.rainIn != null ? `${stat.rainIn.toFixed(2)} in` : "—"}</div>
+      <div className="stats-section">
+        <div className="stats-section-title">Rain</div>
+        <div className="stats-table">
+          <div className="stats-row stats-header">
+            <div></div>
+            <div>Total</div>
           </div>
-        ))}
+          {rows.map(({ label, stat }) => (
+            <div className="stats-row stats-row-2col" key={label}>
+              <div className="stats-label">{label}</div>
+              <div>{stat?.rainIn != null ? `${stat.rainIn.toFixed(2)} in` : "—"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="stats-section">
+        <div className="stats-section-title">Wind</div>
+        <div className="stats-table">
+          <div className="stats-row stats-header">
+            <div></div>
+            <div>High (gust)</div>
+            <div>Low (lull)</div>
+          </div>
+          {rows.map(({ label, stat }) => (
+            <div className="stats-row" key={label}>
+              <div className="stats-label">{label}</div>
+              <div>{stat?.windHighMph != null ? `${Math.round(stat.windHighMph)} mph` : "—"}</div>
+              <div>{stat?.windLowMph != null ? `${Math.round(stat.windLowMph)} mph` : "—"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="stats-section">
+        <div className="stats-section-title">Temperature</div>
+        <div className="stats-table">
+          <div className="stats-row stats-header">
+            <div></div>
+            <div>High</div>
+            <div>Low</div>
+          </div>
+          {rows.map(({ label, stat }) => (
+            <div className="stats-row" key={label}>
+              <div className="stats-label">{label}</div>
+              <div>{stat?.highF != null ? `${Math.round(stat.highF)}°F` : "—"}</div>
+              <div>{stat?.lowF != null ? `${Math.round(stat.lowF)}°F` : "—"}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
