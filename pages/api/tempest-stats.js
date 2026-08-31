@@ -9,13 +9,12 @@
 // against this station's real data (rain totals cross-checked against
 // known heavy-rain days).
 const COL = {
-  TEMP_MAX_C: 4,
-  TEMP_MIN_C: 5,
-  WIND_GUST_MAX_MS: 13,
-  WIND_LULL_MIN_MS: 14,
-  RAIN_TOTAL_MM: 27,
+  TEMP_MAX_C: 5,
+  TEMP_MIN_C: 6,
+  WIND_GUST_MAX_MS: 14,
+  WIND_LULL_MIN_MS: 15,
+  RAIN_TOTAL_MM: 28,
 };
-
 function cToF(c) {
   return (c * 9) / 5 + 32;
 }
