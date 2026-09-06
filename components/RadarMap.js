@@ -1,34 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 
-// IEM (Iowa Environmental Mesonet) serves free, cache-friendly NEXRAD
-// composite tiles. "900913" = current, "900913-mNNm" = NN minutes ago.
-// This is the same public tile service used by many US weather sites.
-const FRAME_OFFSETS = [
-  "900913-m50m",
-  "900913-m45m",
-  "900913-m40m",
-  "900913-m35m",
-  "900913-m30m",
-  "900913-m25m",
-  "900913-m20m",
-  "900913-m15m",
-  "900913-m10m",
-  "900913-m05m",
-  "900913", // current
-];
-
-const TILE_URL = (frame) =>
-  `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-${frame}/{z}/{x}/{y}.png`;
+// RainViewer's free API: https://api.rainviewer.com/public/weather-maps.json
+// Returns the host + a set of "past" frame paths (10-min intervals, ~2 hrs
+// of history). As of their Jan 2026 free-tier changes: max zoom 7, single
+// color scheme, PNG only, no forecast/nowcast on the free tier.
+const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
+const TILE_SIZE = 256;
+const COLOR_SCHEME = 2; // Universal Blue — RainViewer's documented default
+const OPTIONS = "1_1"; // smooth: on, snow color differentiation: on
+const RADAR_MAX_NATIVE_ZOOM = 7;
 
 export default function RadarMap({ lat, lon, label }) {
   const mapDivRef = useRef(null);
   const mapRef = useRef(null);
   const layersRef = useRef([]);
-  const frameIndexRef = useRef(FRAME_OFFSETS.length - 1);
+  const frameIndexRef = useRef(0);
   const intervalRef = useRef(null);
   const playingRef = useRef(true);
   const [playing, setPlaying] = useState(true);
-  const [frameLabel, setFrameLabel] = useState("Live");
+  const [frameLabel, setFrameLabel] = useState("Loading…");
 
   useEffect(() => {
     let L;
@@ -45,31 +35,49 @@ export default function RadarMap({ lat, lon, label }) {
       });
       mapRef.current = map;
 
-                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         subdomains: "abc",
         maxZoom: 19,
       }).addTo(map);
 
-      buildRadarLayers(L, map);
-
       L.marker([lat, lon]).addTo(map).bindPopup(label || "Weather station");
 
+      await buildRadarLayers(L, map);
       startLoop();
     }
 
-    function buildRadarLayers(L, map) {
-      // remove old ones if rebuilding
-      layersRef.current.forEach((l) => map.removeLayer(l));
-      layersRef.current = FRAME_OFFSETS.map((frame, i) =>
-        L.tileLayer(TILE_URL(frame), {
-          opacity: i === frameIndexRef.current ? 0.65 : 0,
-          zIndex: 10,
-          attribution:
-            "Radar: Iowa Environmental Mesonet (IEM) / NEXRAD composite",
-        }).addTo(map)
-      );
+    async function buildRadarLayers(L, map) {
+      try {
+        const res = await fetch(RAINVIEWER_API);
+        const data = await res.json();
+        const frames = data?.radar?.past || [];
+
+        // remove any previous layers (e.g. on a 5-min refresh)
+        layersRef.current.forEach((l) => map.removeLayer(l));
+
+        layersRef.current = frames.map((frame, i) =>
+          L.tileLayer(
+            `${data.host}${frame.path}/${TILE_SIZE}/{z}/{x}/{y}/${COLOR_SCHEME}/${OPTIONS}.png`,
+            {
+              opacity: 0,
+              zIndex: 10,
+              maxNativeZoom: RADAR_MAX_NATIVE_ZOOM,
+              maxZoom: 19,
+              attribution: "Radar: RainViewer",
+            }
+          ).addTo(map)
+        );
+
+        if (layersRef.current.length) {
+          frameIndexRef.current = layersRef.current.length - 1;
+          layersRef.current[frameIndexRef.current].setOpacity(0.65);
+          setFrameLabel("Live");
+        }
+      } catch (err) {
+        console.warn("RainViewer fetch failed:", err);
+      }
     }
 
     function startLoop() {
@@ -89,17 +97,16 @@ export default function RadarMap({ lat, lon, label }) {
       if (!layers.length) return;
       const prev = frameIndexRef.current;
       let next = prev + 1;
-      // pause a little longer on the most recent frame
       if (next >= layers.length) next = 0;
       layers[prev].setOpacity(0);
       layers[next].setOpacity(0.65);
       frameIndexRef.current = next;
-      setFrameLabel(next === layers.length - 1 ? "Live" : `-${(layers.length - 1 - next) * 5} min`);
+      setFrameLabel(next === layers.length - 1 ? "Live" : `-${(layers.length - 1 - next) * 10} min`);
     }
 
     init();
 
-    // Refresh tile timestamps every 5 minutes so the loop stays current.
+    // RainViewer publishes a new frame roughly every 10 minutes.
     const refreshTimer = setInterval(() => {
       if (mapRef.current && L) buildRadarLayers(L, mapRef.current);
     }, 5 * 60 * 1000);
@@ -116,7 +123,6 @@ export default function RadarMap({ lat, lon, label }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon]);
 
-  // keep the running interval aware of play/pause without re-init
   useEffect(() => {
     playingRef.current = playing;
   }, [playing]);
