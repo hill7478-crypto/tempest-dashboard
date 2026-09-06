@@ -1,30 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 
-// RainViewer's free API: https://api.rainviewer.com/public/weather-maps.json
-// Returns the host + a set of "past" frame paths (10-min intervals, ~2 hrs
-// of history). As of their Jan 2026 free-tier changes: max zoom 7, single
-// color scheme, PNG only, no forecast/nowcast on the free tier.
-const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
-const TILE_SIZE = 256;
-const COLOR_SCHEME = 2; // Universal Blue — RainViewer's documented default
-const OPTIONS = "1_1"; // smooth: on, snow color differentiation: on
-const RADAR_MAX_NATIVE_ZOOM = 7;
+// Single-site NEXRAD Level 3 imagery from IEM — the same underlying
+// product type Gibson Ridge / RadarScope display by default (N0Q =
+// base reflectivity, lowest tilt). Site BMX = Birmingham, AL, which
+// covers the Homewood area. To point this at a different radar site
+// later, change RADAR_SITE below (find codes at weather.gov/radar).
+const RADAR_SITE = "BMX";
+const RADAR_PRODUCT = "N0Q";
+const REFRESH_MS = 2 * 60 * 1000; // IEM ingests a new scan every ~2-5 min
+
+function tileUrl(cacheBuster) {
+  return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${RADAR_SITE}-${RADAR_PRODUCT}-0/{z}/{x}/{y}.png?t=${cacheBuster}`;
+}
 
 export default function RadarMap({ lat, lon, label }) {
   const mapDivRef = useRef(null);
   const mapRef = useRef(null);
-  const layersRef = useRef([]);
-  const frameIndexRef = useRef(0);
-  const intervalRef = useRef(null);
-  const playingRef = useRef(true);
-  const [playing, setPlaying] = useState(true);
-  const [frameLabel, setFrameLabel] = useState("Loading…");
+  const layerRef = useRef(null);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
 
   useEffect(() => {
     let L;
     let cancelled = false;
 
-        async function init() {
+    async function init() {
       L = (await import("leaflet")).default;
       if (cancelled || !mapDivRef.current) return;
 
@@ -41,7 +40,7 @@ export default function RadarMap({ lat, lon, label }) {
 
       const map = L.map(mapDivRef.current, {
         center: [lat, lon],
-        zoom: 7,
+        zoom: 8,
         zoomControl: true,
       });
       mapRef.current = map;
@@ -55,76 +54,33 @@ export default function RadarMap({ lat, lon, label }) {
 
       L.marker([lat, lon]).addTo(map).bindPopup(label || "Weather station");
 
-      await buildRadarLayers(L, map);
-      startLoop();
+      refreshRadarLayer(L, map);
     }
 
-    async function buildRadarLayers(L, map) {
-      try {
-        const res = await fetch(RAINVIEWER_API);
-        const data = await res.json();
-        const frames = data?.radar?.past || [];
+    function refreshRadarLayer(L, map) {
+      const cacheBuster = Date.now();
+      const newLayer = L.tileLayer(tileUrl(cacheBuster), {
+        opacity: 0.7,
+        zIndex: 10,
+        attribution: `Radar: IEM (single-site ${RADAR_SITE} ${RADAR_PRODUCT})`,
+      });
 
-        // remove any previous layers (e.g. on a 5-min refresh)
-        layersRef.current.forEach((l) => map.removeLayer(l));
-
-        layersRef.current = frames.map((frame, i) =>
-          L.tileLayer(
-            `${data.host}${frame.path}/${TILE_SIZE}/{z}/{x}/{y}/${COLOR_SCHEME}/${OPTIONS}.png`,
-            {
-              opacity: 0,
-              zIndex: 10,
-              maxNativeZoom: RADAR_MAX_NATIVE_ZOOM,
-              maxZoom: 19,
-              attribution: "Radar: RainViewer",
-            }
-          ).addTo(map)
-        );
-
-        if (layersRef.current.length) {
-          frameIndexRef.current = layersRef.current.length - 1;
-          layersRef.current[frameIndexRef.current].setOpacity(0.65);
-          setFrameLabel("Live");
-        }
-      } catch (err) {
-        console.warn("RainViewer fetch failed:", err);
+      newLayer.addTo(map);
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
       }
-    }
-
-    function startLoop() {
-      stopLoop();
-      intervalRef.current = setInterval(() => {
-        if (!playingRef.current) return;
-        advanceFrame();
-      }, 600);
-    }
-
-    function stopLoop() {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    }
-
-    function advanceFrame() {
-      const layers = layersRef.current;
-      if (!layers.length) return;
-      const prev = frameIndexRef.current;
-      let next = prev + 1;
-      if (next >= layers.length) next = 0;
-      layers[prev].setOpacity(0);
-      layers[next].setOpacity(0.65);
-      frameIndexRef.current = next;
-      setFrameLabel(next === layers.length - 1 ? "Live" : `-${(layers.length - 1 - next) * 10} min`);
+      layerRef.current = newLayer;
+      setLastRefreshed(new Date());
     }
 
     init();
 
-    // RainViewer publishes a new frame roughly every 10 minutes.
     const refreshTimer = setInterval(() => {
-      if (mapRef.current && L) buildRadarLayers(L, mapRef.current);
-    }, 5 * 60 * 1000);
+      if (mapRef.current && L) refreshRadarLayer(L, mapRef.current);
+    }, REFRESH_MS);
 
     return () => {
       cancelled = true;
-      stopLoop();
       clearInterval(refreshTimer);
       if (mapRef.current) {
         mapRef.current.remove();
@@ -134,18 +90,14 @@ export default function RadarMap({ lat, lon, label }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon]);
 
-  useEffect(() => {
-    playingRef.current = playing;
-  }, [playing]);
-
   return (
     <>
       <div ref={mapDivRef} className="map-container" />
       <div style={{ padding: "8px 14px", display: "flex", gap: 10, alignItems: "center" }}>
-        <div className="radar-controls">
-          <button onClick={() => setPlaying((p) => !p)}>{playing ? "Pause" : "Play"}</button>
-        </div>
-        <span style={{ fontSize: 12, color: "#8b98a9" }}>{frameLabel}</span>
+        <span style={{ fontSize: 12, color: "#8b98a9" }}>
+          {RADAR_SITE} base reflectivity
+          {lastRefreshed ? ` · updated ${lastRefreshed.toLocaleTimeString()}` : ""}
+        </span>
       </div>
     </>
   );
