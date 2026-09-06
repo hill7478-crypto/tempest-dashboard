@@ -24,9 +24,20 @@ export default function RadarMap({ lat, lon, label }) {
     let L;
     let cancelled = false;
 
-    async function init() {
+        async function init() {
       L = (await import("leaflet")).default;
       if (cancelled || !mapDivRef.current) return;
+
+      // Leaflet's default marker icon paths break under Next.js/webpack
+      // bundling — point them at a CDN instead so the pin actually renders.
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
 
       const map = L.map(mapDivRef.current, {
         center: [lat, lon],
